@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Select from '../components/Select';
 import Button from '../components/Button';
+import OptionCard from '../components/OptionCard';
 import { quizQuestions, type QuizFormData } from '../lib/quizData';
 
 export default function QuizPage() {
@@ -14,10 +14,10 @@ export default function QuizPage() {
   const currentQuestion = quizQuestions[currentStep];
   const progress = ((currentStep + 1) / quizQuestions.length) * 100;
   
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleSelect = (value: string) => {
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [currentQuestion.id]: value
     }));
   };
   
@@ -35,7 +35,18 @@ export default function QuizPage() {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`/result?data=${encodeURIComponent(JSON.stringify(formData))}`);
+    
+    // Ensure all questions are answered
+    const allQuestionsAnswered = quizQuestions.every(q => formData[q.id as keyof QuizFormData]);
+    
+    if (!allQuestionsAnswered) {
+      alert('Please answer all questions before submitting.');
+      return;
+    }
+    
+    // Convert the form data to a URL-safe string
+    const formDataString = encodeURIComponent(JSON.stringify(formData));
+    router.push(`/result?data=${formDataString}`);
   };
   
   return (
@@ -57,15 +68,29 @@ export default function QuizPage() {
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Select
-            key={currentQuestion.id}
-            name={currentQuestion.id}
-            label={currentQuestion.label}
-            options={currentQuestion.options}
-            value={formData[currentQuestion.id as keyof QuizFormData] || ''}
-            onChange={handleChange}
-            required
-          />
+          <div>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              {currentQuestion.label}
+            </h2>
+            <div className="grid gap-3">
+              {currentQuestion.options.map((option) => {
+                // Ensure we're passing strings, not objects
+                const optionValue = typeof option === 'string' ? option : option.value;
+                const optionSubheading = typeof option === 'string' ? undefined : option.subheading;
+                
+                return (
+                  <OptionCard
+                    key={optionValue}
+                    value={optionValue}
+                    label={optionValue}
+                    subheading={optionSubheading}
+                    isSelected={formData[currentQuestion.id as keyof QuizFormData] === optionValue}
+                    onClick={() => handleSelect(optionValue)}
+                  />
+                );
+              })}
+            </div>
+          </div>
           
           <div className="flex justify-between">
             <Button
@@ -78,7 +103,10 @@ export default function QuizPage() {
             </Button>
             
             {currentStep === quizQuestions.length - 1 ? (
-              <Button type="submit">
+              <Button 
+                type="submit" 
+                disabled={!formData[currentQuestion.id as keyof QuizFormData]}
+              >
                 See Your Results
               </Button>
             ) : (
