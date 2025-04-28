@@ -24,7 +24,7 @@ export default function Hero() {
             <Button 
               href="/quiz" 
               size="lg" 
-              className="bg-white text-black hover:bg-gray-100 border-2 border-white px-8 py-4 text-lg"
+              className="px-8 py-4 text-lg"
             >
               Find Your Founder Roast
             </Button>
@@ -32,7 +32,7 @@ export default function Hero() {
               href="#origin" 
               variant="outline" 
               size="lg" 
-              className="border-2 border-white text-white hover:bg-white/10 px-8 py-4 text-lg"
+              className="text-white px-8 py-4 text-lg"
             >
               Our Story
             </Button>

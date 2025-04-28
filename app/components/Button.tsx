@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   href?: string;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -19,7 +19,8 @@ export default function Button({
   
   const variants = {
     primary: 'bg-white text-black hover:bg-gray-100 focus:ring-amber-500',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500'
+    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500',
+    outline: 'bg-transparent border-2 border-current hover:bg-white/10 focus:ring-white'
   };
   
   const sizes = {
