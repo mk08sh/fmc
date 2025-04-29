@@ -184,7 +184,7 @@ ${personalizedResults}
             <div>
               <h3 style="color: #4a5568; margin-bottom: 5px;">Productivity Tips</h3>
               <ul style="margin: 5px 0; padding-left: 20px;">
-                ${response.personalizedResults.productivityTips.map(tip => `
+                ${response.personalizedResults.productivityTips.map((tip: string) => `
                   <li style="margin: 5px 0;">${tip}</li>
                 `).join('')}
               </ul>
