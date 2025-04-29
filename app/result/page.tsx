@@ -6,7 +6,8 @@ import Button from '../components/Button';
 import { matchRoastProfile } from '../lib/matchRoast';
 import type { QuizFormData } from '../lib/quizData';
 
-function ResultContent() {
+// Separate component that uses useSearchParams
+function ResultData() {
   const searchParams = useSearchParams();
   const quizData = searchParams.get('data');
   
@@ -115,15 +116,21 @@ function ResultContent() {
   }
 }
 
+// Loading component
+function LoadingState() {
+  return (
+    <div className="max-w-3xl mx-auto text-center">
+      <h2 className="text-xl font-semibold text-gray-900">Loading your results...</h2>
+    </div>
+  );
+}
+
+// Main page component with proper Suspense boundary
 export default function ResultPage() {
   return (
     <main className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
-      <Suspense fallback={
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-xl font-semibold text-gray-900">Loading your results...</h2>
-        </div>
-      }>
-        <ResultContent />
+      <Suspense fallback={<LoadingState />}>
+        <ResultData />
       </Suspense>
     </main>
   );

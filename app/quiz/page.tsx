@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '../components/Button';
 import OptionCard from '../components/OptionCard';
@@ -9,7 +9,19 @@ import { quizQuestions, type QuizFormData } from '../lib/quizData';
 export default function QuizPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Partial<QuizFormData>>({});
+  const [formData, setFormData] = useState<Partial<QuizFormData>>(() => {
+    // Try to load saved data on initial render
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('quizResponses');
+      return saved ? JSON.parse(saved) : {};
+    }
+    return {};
+  });
+  
+  // Save to localStorage whenever formData changes
+  useEffect(() => {
+    localStorage.setItem('quizResponses', JSON.stringify(formData));
+  }, [formData]);
   
   const currentQuestion = quizQuestions[currentStep];
   const progress = ((currentStep + 1) / quizQuestions.length) * 100;
@@ -33,7 +45,7 @@ export default function QuizPage() {
     }
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Ensure all questions are answered
@@ -44,9 +56,30 @@ export default function QuizPage() {
       return;
     }
     
-    // Convert the form data to a URL-safe string
-    const formDataString = encodeURIComponent(JSON.stringify(formData));
-    router.push(`/result?data=${formDataString}`);
+    try {
+      // Send to API endpoint
+      const response = await fetch('/api/quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit quiz');
+      }
+
+      // Clear localStorage after successful submission
+      localStorage.removeItem('quizResponses');
+      
+      // Convert the form data to a URL-safe string and redirect to results
+      const formDataString = encodeURIComponent(JSON.stringify(formData));
+      router.push(`/result?data=${formDataString}`);
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      alert('There was an error submitting your quiz. Please try again.');
+    }
   };
   
   return (

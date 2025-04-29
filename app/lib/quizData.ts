@@ -7,7 +7,7 @@ export interface QuizQuestion {
   }>;
 }
 
-export interface QuizFormData {
+export type QuizFormData = {
   stage: string;
   problemSolving: string;
   boostTime: string;
@@ -18,7 +18,12 @@ export interface QuizFormData {
   sensoryFocus: string;
   flavorNotes: string;
   attentionStyle: string;
-}
+  // Contact Information
+  name: string;
+  email: string;
+  companyName?: string;
+  phoneNumber?: string;
+};
 
 export const quizQuestions: QuizQuestion[] = [
   {
@@ -241,4 +246,40 @@ export const quizQuestions: QuizQuestion[] = [
       }
     ]
   }
-]; 
+];
+
+// Add contact information step
+export const contactFields = {
+  id: 'contact',
+  label: 'Almost there! How can we reach you?',
+  fields: [
+    {
+      id: 'name',
+      label: 'Your Name',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter your full name'
+    },
+    {
+      id: 'email',
+      label: 'Email Address',
+      type: 'email',
+      required: true,
+      placeholder: 'you@company.com'
+    },
+    {
+      id: 'companyName',
+      label: 'Company Name',
+      type: 'text',
+      required: false,
+      placeholder: 'Your company name (optional)'
+    },
+    {
+      id: 'phoneNumber',
+      label: 'Phone Number',
+      type: 'tel',
+      required: false,
+      placeholder: 'Your phone number (optional)'
+    }
+  ]
+}; 
