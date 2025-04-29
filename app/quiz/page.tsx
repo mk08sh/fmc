@@ -47,6 +47,8 @@ export default function QuizPage() {
   const handleNext = () => {
     if (currentStep < quizQuestions.length - 1) {
       setCurrentStep(prev => prev + 1);
+    } else {
+      handleSubmit();
     }
   };
   
@@ -56,14 +58,12 @@ export default function QuizPage() {
     }
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     // Ensure all questions are answered
     const allQuestionsAnswered = quizQuestions.every(q => formData[q.id as keyof QuizFormData]);
     
     if (!allQuestionsAnswered) {
-      alert('Please answer all questions before seeing your results.');
+      alert('Please answer all questions before proceeding.');
       return;
     }
     
@@ -80,9 +80,6 @@ export default function QuizPage() {
       if (!response.ok) {
         throw new Error('Failed to submit quiz');
       }
-
-      // Clear localStorage after successful submission
-      localStorage.removeItem('quizResponses');
       
       // Convert the form data to a URL-safe string and redirect to results
       const formDataString = encodeURIComponent(JSON.stringify(formData));
@@ -116,7 +113,7 @@ export default function QuizPage() {
           </p>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           <div>
             <h2 className="text-lg font-medium text-gray-900 mb-4">
               {currentQuestion.label}
@@ -150,24 +147,15 @@ export default function QuizPage() {
               Previous
             </Button>
             
-            {currentStep === quizQuestions.length - 1 ? (
-              <Button 
-                type="submit"
-                disabled={!formData[currentQuestion.id as keyof QuizFormData]}
-              >
-                See Your Results
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={handleNext}
-                disabled={!formData[currentQuestion.id as keyof QuizFormData]}
-              >
-                Next
-              </Button>
-            )}
+            <Button
+              type="button"
+              onClick={handleNext}
+              disabled={!formData[currentQuestion.id as keyof QuizFormData]}
+            >
+              {currentStep === quizQuestions.length - 1 ? 'See Your Results' : 'Next'}
+            </Button>
           </div>
-        </form>
+        </div>
       </div>
     </main>
   );

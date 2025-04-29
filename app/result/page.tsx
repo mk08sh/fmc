@@ -1,10 +1,11 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { matchRoastProfile } from '../lib/matchRoast';
 import type { QuizFormData } from '../lib/quizData';
+import ContactForm from '../components/ContactForm';
 import './styles.css';
 
 // Coffee beans SVG component
@@ -357,8 +358,17 @@ const BookingForm = () => {
 
 // Separate component that uses useSearchParams
 function ResultData() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const quizData = searchParams.get('data');
+  const [formData, setFormData] = useState<Partial<QuizFormData>>(() => {
+    try {
+      return quizData ? JSON.parse(decodeURIComponent(quizData)) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
   
   if (!quizData) {
     return (
@@ -387,6 +397,38 @@ function ResultData() {
       </div>
     );
   }
+
+  const handleContactChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit contact information');
+      }
+
+      setIsSubmitted(true);
+      // Clear quiz data from localStorage after successful submission
+      localStorage.removeItem('quizResponses');
+    } catch (error) {
+      console.error('Error submitting contact information:', error);
+      alert('There was an error submitting your contact information. Please try again.');
+    }
+  };
   
   try {
     const matchedRoast = matchRoastProfile(answers);
@@ -395,9 +437,6 @@ function ResultData() {
       <div className="result-container">
         <CoffeeBeansSVG />
         <h1 className="result-title">Your Perfect Roast Match</h1>
-        <p className="result-tagline">
-          We've found your ideal coffee profile. Ready to experience it in person?
-        </p>
         
         <div className="roast-card-container">
           <div className="roast-card">
@@ -413,9 +452,34 @@ function ResultData() {
           </div>
         </div>
 
-        <BookingForm />
-        
-        <Link href="/" className="home-button mt-8">Take Me Home</Link>
+        {!isSubmitted ? (
+          <div className="mt-8 max-w-md mx-auto">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Ready to experience your perfect roast?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Let us know how to reach you, and our Chief Barista will connect with you shortly to finalize your Founder Experience.
+            </p>
+            <ContactForm
+              formData={formData}
+              onSubmit={handleContactSubmit}
+              onChange={handleContactChange}
+              submitButtonText="Start Your Coffee Journey"
+            />
+          </div>
+        ) : (
+          <div className="mt-8 text-center">
+            <h2 className="text-xl font-semibold text-green-600 mb-4">
+              Thank you for sharing your information!
+            </h2>
+            <p className="text-gray-600">
+              Our Chief Barista will be in touch with you shortly to begin your coffee journey.
+            </p>
+            <Link href="/" className="home-button mt-6">
+              Return Home
+            </Link>
+          </div>
+        )}
       </div>
     );
   } catch (error) {
