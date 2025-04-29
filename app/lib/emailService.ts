@@ -7,41 +7,97 @@ interface EmailData {
   html: string;
 }
 
+// Validate environment variables first
+function validateEnvironmentVariables() {
+  const requiredVars = {
+    GMAIL_USER: process.env.GMAIL_USER,
+    GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD,
+    RECIPIENT_EMAIL: process.env.RECIPIENT_EMAIL
+  };
+
+  const missingVars = Object.entries(requiredVars)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingVars.length > 0) {
+    console.error('Missing required environment variables:', missingVars);
+    return false;
+  }
+
+  return true;
+}
+
 // Debug logging for environment variables
 console.log('Email Service Initialization - Environment Variables Check:', {
   GMAIL_USER: process.env.GMAIL_USER ? 'Set' : 'Not Set',
+  GMAIL_USER_LENGTH: process.env.GMAIL_USER?.length,
   GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD ? 'Set' : 'Not Set',
-  RECIPIENT_EMAIL: process.env.RECIPIENT_EMAIL ? 'Set' : 'Not Set'
+  GMAIL_APP_PASSWORD_LENGTH: process.env.GMAIL_APP_PASSWORD?.length,
+  RECIPIENT_EMAIL: process.env.RECIPIENT_EMAIL ? 'Set' : 'Not Set',
+  RECIPIENT_EMAIL_LENGTH: process.env.RECIPIENT_EMAIL?.length,
+  NODE_ENV: process.env.NODE_ENV
 });
 
 // Create a transporter using Gmail with explicit settings
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-  debug: true,
-  logger: true
-});
+let transporter: nodemailer.Transporter | null = null;
 
-// Verify transporter configuration
-transporter.verify(function(error, success) {
-  if (error) {
-    console.error('Transporter verification failed:', error);
+try {
+  if (!validateEnvironmentVariables()) {
+    console.error('Email service initialization failed: Missing environment variables');
   } else {
-    console.log('Transporter is ready to send emails');
+    transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+      debug: true,
+      logger: true
+    });
+
+    // Verify transporter configuration
+    transporter.verify(function(error, success) {
+      if (error) {
+        console.error('Transporter verification failed:', error);
+        console.error('Full error details:', {
+          name: error.name,
+          message: error.message,
+          code: 'code' in error ? error.code : undefined,
+          command: 'command' in error ? error.command : undefined,
+        });
+        transporter = null;
+      } else {
+        console.log('Transporter is ready to send emails');
+      }
+    });
   }
-});
+} catch (error) {
+  console.error('Failed to create email transporter:', error);
+  transporter = null;
+}
 
 export async function sendEmail({ to, subject, html }: EmailData) {
+  if (!transporter) {
+    console.error('Email service not properly initialized');
+    return { success: false, error: 'Email service not properly initialized' };
+  }
+
+  if (!validateEnvironmentVariables()) {
+    console.error('Cannot send email: Missing environment variables');
+    return { success: false, error: 'Missing environment variables' };
+  }
+
   try {
     console.log('Attempting to send email with config:', {
       from: process.env.GMAIL_USER,
       to,
-      subject
+      subject,
+      fromLength: process.env.GMAIL_USER?.length,
+      toLength: to?.length,
+      subjectLength: subject?.length,
+      htmlLength: html?.length
     });
 
     const mailOptions = {
@@ -51,11 +107,29 @@ export async function sendEmail({ to, subject, html }: EmailData) {
       html,
     };
 
+    console.log('Sending mail with options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+    });
+
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.messageId);
+    console.log('Email sent successfully:', {
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected,
+    });
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Detailed error sending email:', error);
+    console.error('Full error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      code: error && typeof error === 'object' && 'code' in error ? error.code : undefined,
+      command: error && typeof error === 'object' && 'command' in error ? error.command : undefined,
+    });
+
     // Type guard to check if error is an object with a code property
     if (error && typeof error === 'object' && 'code' in error) {
       if (error.code === 'EAUTH') {
@@ -92,13 +166,24 @@ Name: ${response.name || 'Not provided'}
 Email: ${response.email || 'Not provided'}
 ${response.companyName ? `Company: ${response.companyName}` : ''}
 ${response.phoneNumber ? `Phone: ${response.phoneNumber}` : ''}
+${response.isInSF ? 'Located in San Francisco' : ''}
+${response.isYC ? `Y Combinator Batch: ${response.ycBatch || 'Not specified'}` : ''}
 `;
+
+    // Format booking information if available
+    const bookingInfo = response.date && response.time ? `
+Booking Information:
+------------------
+Date: ${response.date}
+Time: ${response.time}
+Participants: ${response.participants || '1'}
+` : '';
 
     // Format all quiz responses
     const quizResponses = `
 Quiz Responses:
 -------------
-Startup Stage: ${response.stage}
+${response.stage !== 'Not specified' ? `Startup Stage: ${response.stage}
 Problem-Solving Approach: ${response.problemSolving}
 Boost Time: ${response.boostTime}
 Biggest Challenge: ${response.bigChallenge}
@@ -107,7 +192,7 @@ Environment Preference: ${response.environment}
 Deadline Approach: ${response.deadlineStyle}
 Sensory Focus: ${response.sensoryFocus}
 Flavor Notes: ${response.flavorNotes}
-Attention Style: ${response.attentionStyle}
+Attention Style: ${response.attentionStyle}` : 'Booking request - no quiz responses'}
 `;
 
     // Format personalized results
@@ -123,11 +208,12 @@ ${response.personalizedResults.productivityTips.map((tip: string) => `• ${tip}
 ` : '';
 
     const emailContent = `
-New Founder Quiz Response
+${response.date ? 'New Booking Request' : 'New Quiz Response'}
 ========================
 Timestamp: ${new Date().toLocaleString()}
 
 ${contactInfo}
+${bookingInfo}
 ${quizResponses}
 ${personalizedResults}
 ------------------------
@@ -137,12 +223,14 @@ ${personalizedResults}
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: process.env.RECIPIENT_EMAIL,
-      subject: `New Quiz Response from ${response.name || 'Anonymous'} ${response.companyName ? `- ${response.companyName}` : ''}`,
+      subject: response.date 
+        ? `New Booking Request from ${response.name || 'Anonymous'} ${response.companyName ? `- ${response.companyName}` : ''}`
+        : `New Quiz Response from ${response.name || 'Anonymous'} ${response.companyName ? `- ${response.companyName}` : ''}`,
       text: emailContent,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #2d3748; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
-            New Founder Quiz Response
+            ${response.date ? 'New Booking Request' : 'New Quiz Response'}
           </h1>
           
           <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -151,8 +239,20 @@ ${personalizedResults}
             <p style="margin: 5px 0;"><strong>Email:</strong> ${response.email || 'Not provided'}</p>
             ${response.companyName ? `<p style="margin: 5px 0;"><strong>Company:</strong> ${response.companyName}</p>` : ''}
             ${response.phoneNumber ? `<p style="margin: 5px 0;"><strong>Phone:</strong> ${response.phoneNumber}</p>` : ''}
+            ${response.isInSF ? `<p style="margin: 5px 0;">Located in San Francisco</p>` : ''}
+            ${response.isYC ? `<p style="margin: 5px 0;"><strong>Y Combinator Batch:</strong> ${response.ycBatch || 'Not specified'}</p>` : ''}
           </div>
 
+          ${response.date && response.time ? `
+          <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h2 style="color: #4a5568; margin-top: 0;">Booking Information</h2>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${response.date}</p>
+            <p style="margin: 5px 0;"><strong>Time:</strong> ${response.time}</p>
+            <p style="margin: 5px 0;"><strong>Participants:</strong> ${response.participants || '1'}</p>
+          </div>
+          ` : ''}
+
+          ${response.stage !== 'Not specified' ? `
           <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px;">
             <h2 style="color: #4a5568; margin-top: 0;">Quiz Responses</h2>
             <p style="margin: 5px 0;"><strong>Startup Stage:</strong> ${response.stage}</p>
@@ -166,6 +266,7 @@ ${personalizedResults}
             <p style="margin: 5px 0;"><strong>Flavor Notes:</strong> ${response.flavorNotes}</p>
             <p style="margin: 5px 0;"><strong>Attention Style:</strong> ${response.attentionStyle}</p>
           </div>
+          ` : ''}
 
           ${response.personalizedResults ? `
           <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px; margin-top: 20px;">

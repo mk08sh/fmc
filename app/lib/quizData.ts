@@ -23,6 +23,13 @@ export type QuizFormData = {
   email: string;
   companyName?: string;
   phoneNumber?: string;
+  // Booking Information
+  date?: string;
+  time?: string;
+  participants?: string;
+  isInSF?: boolean;
+  isYC?: boolean;
+  ycBatch?: string;
 };
 
 export const quizQuestions: QuizQuestion[] = [

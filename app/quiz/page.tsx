@@ -4,28 +4,38 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '../components/Button';
 import OptionCard from '../components/OptionCard';
-import { quizQuestions, contactFields, type QuizFormData } from '../lib/quizData';
+import { quizQuestions, type QuizFormData } from '../lib/quizData';
 
 export default function QuizPage() {
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [showContactForm, setShowContactForm] = useState(false);
-  const [formData, setFormData] = useState<Partial<QuizFormData>>(() => {
-    // Try to load saved data on initial render
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('quizResponses');
-      return saved ? JSON.parse(saved) : {};
+  const [formData, setFormData] = useState<Partial<QuizFormData>>({});
+  
+  // Handle client-side initialization
+  useEffect(() => {
+    setIsClient(true);
+    const saved = localStorage.getItem('quizResponses');
+    if (saved) {
+      try {
+        const parsedData = JSON.parse(saved);
+        setFormData(parsedData);
+      } catch (error) {
+        console.error('Error parsing saved quiz data:', error);
+        localStorage.removeItem('quizResponses');
+      }
     }
-    return {};
-  });
+  }, []);
   
   // Save to localStorage whenever formData changes
   useEffect(() => {
-    localStorage.setItem('quizResponses', JSON.stringify(formData));
-  }, [formData]);
+    if (isClient) {
+      localStorage.setItem('quizResponses', JSON.stringify(formData));
+    }
+  }, [formData, isClient]);
   
   const currentQuestion = quizQuestions[currentStep];
-  const progress = ((currentStep + 1) / (quizQuestions.length + 1)) * 100;
+  const progress = ((currentStep + 1) / quizQuestions.length) * 100;
   
   const handleSelect = (value: string) => {
     setFormData(prev => ({
@@ -33,28 +43,15 @@ export default function QuizPage() {
       [currentQuestion.id]: value
     }));
   };
-
-  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
   
   const handleNext = () => {
     if (currentStep < quizQuestions.length - 1) {
       setCurrentStep(prev => prev + 1);
-    } else if (currentStep === quizQuestions.length - 1) {
-      setShowContactForm(true);
     }
   };
   
   const handlePrevious = () => {
-    if (showContactForm) {
-      setShowContactForm(false);
-      setCurrentStep(quizQuestions.length - 1);
-    } else if (currentStep > 0) {
+    if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
@@ -62,14 +59,11 @@ export default function QuizPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Ensure all questions and required contact fields are answered
+    // Ensure all questions are answered
     const allQuestionsAnswered = quizQuestions.every(q => formData[q.id as keyof QuizFormData]);
-    const requiredContactFieldsAnswered = contactFields.fields
-      .filter(field => field.required)
-      .every(field => formData[field.id as keyof QuizFormData]);
     
-    if (!allQuestionsAnswered || !requiredContactFieldsAnswered) {
-      alert('Please fill in all required fields before submitting.');
+    if (!allQuestionsAnswered) {
+      alert('Please answer all questions before seeing your results.');
       return;
     }
     
@@ -98,6 +92,11 @@ export default function QuizPage() {
       alert('There was an error submitting your quiz. Please try again.');
     }
   };
+
+  // Don't render anything until we've initialized on the client
+  if (!isClient) {
+    return null;
+  }
   
   return (
     <main className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
@@ -113,77 +112,48 @@ export default function QuizPage() {
             />
           </div>
           <p className="mt-2 text-sm text-gray-600 text-center">
-            {showContactForm ? 'Final Step' : `Question ${currentStep + 1} of ${quizQuestions.length}`}
+            Question {currentStep + 1} of {quizQuestions.length}
           </p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {!showContactForm ? (
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                {currentQuestion.label}
-              </h2>
-              <div className="grid gap-3">
-                {currentQuestion.options.map((option) => {
-                  const optionValue = typeof option === 'string' ? option : option.value;
-                  const optionSubheading = typeof option === 'string' ? undefined : option.subheading;
-                  
-                  return (
-                    <OptionCard
-                      key={optionValue}
-                      value={optionValue}
-                      label={optionValue}
-                      subheading={optionSubheading}
-                      isSelected={formData[currentQuestion.id as keyof QuizFormData] === optionValue}
-                      onClick={() => handleSelect(optionValue)}
-                    />
-                  );
-                })}
-              </div>
+          <div>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              {currentQuestion.label}
+            </h2>
+            <div className="grid gap-3">
+              {currentQuestion.options.map((option) => {
+                const optionValue = typeof option === 'string' ? option : option.value;
+                const optionSubheading = typeof option === 'string' ? undefined : option.subheading;
+                
+                return (
+                  <OptionCard
+                    key={optionValue}
+                    value={optionValue}
+                    label={optionValue}
+                    subheading={optionSubheading}
+                    isSelected={formData[currentQuestion.id as keyof QuizFormData] === optionValue}
+                    onClick={() => handleSelect(optionValue)}
+                  />
+                );
+              })}
             </div>
-          ) : (
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Almost there! How can we reach you?
-              </h2>
-              <div className="space-y-4">
-                {contactFields.fields.map((field) => (
-                  <div key={field.id}>
-                    <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
-                      {field.label} {field.required && <span className="text-red-500">*</span>}
-                    </label>
-                    <input
-                      type={field.type}
-                      name={field.id}
-                      id={field.id}
-                      required={field.required}
-                      placeholder={field.placeholder}
-                      value={formData[field.id as keyof QuizFormData] || ''}
-                      onChange={handleContactChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
           
           <div className="flex justify-between">
             <Button
               type="button"
               variant="secondary"
               onClick={handlePrevious}
-              disabled={currentStep === 0 && !showContactForm}
+              disabled={currentStep === 0}
             >
               Previous
             </Button>
             
-            {showContactForm ? (
+            {currentStep === quizQuestions.length - 1 ? (
               <Button 
                 type="submit"
-                disabled={!contactFields.fields
-                  .filter(field => field.required)
-                  .every(field => formData[field.id as keyof QuizFormData])}
+                disabled={!formData[currentQuestion.id as keyof QuizFormData]}
               >
                 See Your Results
               </Button>
