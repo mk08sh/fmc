@@ -56,10 +56,13 @@ export async function sendEmail({ to, subject, html }: EmailData) {
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Detailed error sending email:', error);
-    if (error.code === 'EAUTH') {
-      console.error('Authentication failed. Please check your Gmail credentials.');
+    // Type guard to check if error is an object with a code property
+    if (error && typeof error === 'object' && 'code' in error) {
+      if (error.code === 'EAUTH') {
+        console.error('Authentication failed. Please check your Gmail credentials.');
+      }
     }
-    return { success: false, error };
+    return { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred' };
   }
 }
 
