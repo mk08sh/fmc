@@ -107,11 +107,16 @@ Flavor Notes: ${response.flavorNotes}
 Attention Style: ${response.attentionStyle}
 `;
 
-    // Format personalized results if available
-    const personalizedResultsSection = response.personalizedResults ? `
+    // Format personalized results
+    const personalizedResults = response.personalizedResults ? `
 Personalized Results:
 -------------------
-${JSON.stringify(response.personalizedResults, null, 2)}
+Work Style Profile: ${response.personalizedResults.workStyle}
+
+Coffee Recommendation: ${response.personalizedResults.coffeeRecommendation}
+
+Productivity Tips:
+${response.personalizedResults.productivityTips.map(tip => `• ${tip}`).join('\n')}
 ` : '';
 
     const emailContent = `
@@ -121,7 +126,7 @@ Timestamp: ${new Date().toLocaleString()}
 
 ${contactInfo}
 ${quizResponses}
-${personalizedResultsSection}
+${personalizedResults}
 ------------------------
 `;
 
@@ -162,9 +167,25 @@ ${personalizedResultsSection}
           ${response.personalizedResults ? `
           <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px; margin-top: 20px;">
             <h2 style="color: #4a5568; margin-top: 0;">Personalized Results</h2>
-            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
-${JSON.stringify(response.personalizedResults, null, 2)}
-            </pre>
+            
+            <div style="margin-bottom: 15px;">
+              <h3 style="color: #4a5568; margin-bottom: 5px;">Work Style Profile</h3>
+              <p style="margin: 5px 0;">${response.personalizedResults.workStyle}</p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+              <h3 style="color: #4a5568; margin-bottom: 5px;">Coffee Recommendation</h3>
+              <p style="margin: 5px 0;">${response.personalizedResults.coffeeRecommendation}</p>
+            </div>
+
+            <div>
+              <h3 style="color: #4a5568; margin-bottom: 5px;">Productivity Tips</h3>
+              <ul style="margin: 5px 0; padding-left: 20px;">
+                ${response.personalizedResults.productivityTips.map(tip => `
+                  <li style="margin: 5px 0;">${tip}</li>
+                `).join('')}
+              </ul>
+            </div>
           </div>
           ` : ''}
 
