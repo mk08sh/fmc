@@ -10,21 +10,18 @@ export default function QuizPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Partial<QuizFormData>>({});
+  const [formData, setFormData] = useState<Partial<QuizFormData>>(() => {
+    // Try to load saved data on initial render
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('quizResponses');
+      return saved ? JSON.parse(saved) : {};
+    }
+    return {};
+  });
   
   // Handle client-side initialization
   useEffect(() => {
     setIsClient(true);
-    const saved = localStorage.getItem('quizResponses');
-    if (saved) {
-      try {
-        const parsedData = JSON.parse(saved);
-        setFormData(parsedData);
-      } catch (error) {
-        console.error('Error parsing saved quiz data:', error);
-        localStorage.removeItem('quizResponses');
-      }
-    }
   }, []);
   
   // Save to localStorage whenever formData changes
