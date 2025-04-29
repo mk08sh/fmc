@@ -251,7 +251,6 @@ export const quizQuestions: QuizQuestion[] = [
 // Add contact information step
 export const contactFields = {
   id: 'contact',
-  label: 'Almost there! How can we reach you?',
   fields: [
     {
       id: 'name',
@@ -265,7 +264,7 @@ export const contactFields = {
       label: 'Email Address',
       type: 'email',
       required: true,
-      placeholder: 'you@company.com'
+      placeholder: 'Enter your email address'
     },
     {
       id: 'companyName',
@@ -273,13 +272,6 @@ export const contactFields = {
       type: 'text',
       required: false,
       placeholder: 'Your company name (optional)'
-    },
-    {
-      id: 'phoneNumber',
-      label: 'Phone Number',
-      type: 'tel',
-      required: false,
-      placeholder: 'Your phone number (optional)'
     }
   ]
 }; 
