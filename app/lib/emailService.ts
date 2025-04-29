@@ -119,7 +119,7 @@ Work Style Profile: ${response.personalizedResults.workStyle}
 Coffee Recommendation: ${response.personalizedResults.coffeeRecommendation}
 
 Productivity Tips:
-${response.personalizedResults.productivityTips.map(tip => `• ${tip}`).join('\n')}
+${response.personalizedResults.productivityTips.map((tip: string) => `• ${tip}`).join('\n')}
 ` : '';
 
     const emailContent = `
