@@ -20,10 +20,10 @@ export async function POST(request: Request) {
       );
     }
     
-    return NextResponse.json(
-      { message: 'Quiz response sent successfully' },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      message: 'Quiz response sent successfully',
+      results: personalizedResults
+    }, { status: 200 });
     
   } catch (error) {
     console.error('Error processing quiz submission:', error);
