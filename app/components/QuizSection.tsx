@@ -9,7 +9,7 @@ export default function QuizSection() {
             Founder in a Cup
           </h2>
           <p className="text-xl text-gray-300 mb-12 font-light">
-            We roast fresh, come to your office, and craft your espresso drink onsite.
+            We roast fresh, come to your office, and craft your espresso drink onsite. <span className="text-gray-400">[SF ONLY]</span>
           </p>
           
           <div className="grid md:grid-cols-3 gap-8 mb-16">
