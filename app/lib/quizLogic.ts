@@ -6,6 +6,9 @@ interface PersonalizedResult {
   productivityTips: string[];
 }
 
+type ProblemSolvingStyle = 'Methodical Analyzer' | 'Intuitive Visionary' | 'Collaborative Builder' | 'Rapid Experimenter';
+type WorkStyle = 'Deep Focus Immersion' | 'Parallel Processing' | 'Structured Approach' | 'Collaborative Thinking';
+
 export function generatePersonalizedResults(data: QuizFormData): PersonalizedResult {
   // Generate work style description
   const workStyle = generateWorkStyleDescription(data);
@@ -30,16 +33,16 @@ function generateWorkStyleDescription(data: QuizFormData): string {
       'Intuitive Visionary': 'You trust your instincts and creative insights to solve problems.',
       'Collaborative Builder': 'You thrive on bringing diverse perspectives together.',
       'Rapid Experimenter': 'You prefer quick iterations and learning through trial and error.'
-    },
+    } as const,
     workStyle: {
       'Deep Focus Immersion': 'You excel in long, uninterrupted work sessions.',
       'Parallel Processing': 'You skillfully manage multiple tasks simultaneously.',
       'Structured Approach': 'You prefer clear methodologies and defined steps.',
       'Collaborative Thinking': 'You generate your best ideas through discussion and feedback.'
-    }
+    } as const
   };
 
-  return `${styles.problemSolving[data.problemSolving]} ${styles.workStyle[data.workStyle]}`;
+  return `${styles.problemSolving[data.problemSolving as ProblemSolvingStyle]} ${styles.workStyle[data.workStyle as WorkStyle]}`;
 }
 
 function generateCoffeeRecommendation(data: QuizFormData): string {
