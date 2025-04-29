@@ -79,28 +79,40 @@ export function createQuizResponseEmail(quizData: any) {
   return htmlContent;
 }
 
-export async function emailQuizResponse(response: QuizFormData) {
+export async function emailQuizResponse(response: QuizFormData & { personalizedResults?: any }) {
   try {
     // Format the contact information
     const contactInfo = `
 Contact Information:
 ------------------
-Name: ${response.name}
-Email: ${response.email}
+Name: ${response.name || 'Not provided'}
+Email: ${response.email || 'Not provided'}
 ${response.companyName ? `Company: ${response.companyName}` : ''}
 ${response.phoneNumber ? `Phone: ${response.phoneNumber}` : ''}
 `;
 
-    // Format the quiz responses
+    // Format all quiz responses
     const quizResponses = `
 Quiz Responses:
 -------------
 Startup Stage: ${response.stage}
 Problem-Solving Approach: ${response.problemSolving}
+Boost Time: ${response.boostTime}
+Biggest Challenge: ${response.bigChallenge}
 Work Style: ${response.workStyle}
+Environment Preference: ${response.environment}
 Deadline Approach: ${response.deadlineStyle}
+Sensory Focus: ${response.sensoryFocus}
+Flavor Notes: ${response.flavorNotes}
 Attention Style: ${response.attentionStyle}
 `;
+
+    // Format personalized results if available
+    const personalizedResultsSection = response.personalizedResults ? `
+Personalized Results:
+-------------------
+${JSON.stringify(response.personalizedResults, null, 2)}
+` : '';
 
     const emailContent = `
 New Founder Quiz Response
@@ -109,6 +121,7 @@ Timestamp: ${new Date().toLocaleString()}
 
 ${contactInfo}
 ${quizResponses}
+${personalizedResultsSection}
 ------------------------
 `;
 
@@ -116,7 +129,7 @@ ${quizResponses}
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: process.env.RECIPIENT_EMAIL,
-      subject: `New Quiz Response from ${response.name} - ${response.companyName || 'Individual'}`,
+      subject: `New Quiz Response from ${response.name || 'Anonymous'} ${response.companyName ? `- ${response.companyName}` : ''}`,
       text: emailContent,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -126,8 +139,8 @@ ${quizResponses}
           
           <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h2 style="color: #4a5568; margin-top: 0;">Contact Information</h2>
-            <p style="margin: 5px 0;"><strong>Name:</strong> ${response.name}</p>
-            <p style="margin: 5px 0;"><strong>Email:</strong> ${response.email}</p>
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${response.name || 'Not provided'}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${response.email || 'Not provided'}</p>
             ${response.companyName ? `<p style="margin: 5px 0;"><strong>Company:</strong> ${response.companyName}</p>` : ''}
             ${response.phoneNumber ? `<p style="margin: 5px 0;"><strong>Phone:</strong> ${response.phoneNumber}</p>` : ''}
           </div>
@@ -136,10 +149,24 @@ ${quizResponses}
             <h2 style="color: #4a5568; margin-top: 0;">Quiz Responses</h2>
             <p style="margin: 5px 0;"><strong>Startup Stage:</strong> ${response.stage}</p>
             <p style="margin: 5px 0;"><strong>Problem-Solving Approach:</strong> ${response.problemSolving}</p>
+            <p style="margin: 5px 0;"><strong>Boost Time:</strong> ${response.boostTime}</p>
+            <p style="margin: 5px 0;"><strong>Biggest Challenge:</strong> ${response.bigChallenge}</p>
             <p style="margin: 5px 0;"><strong>Work Style:</strong> ${response.workStyle}</p>
+            <p style="margin: 5px 0;"><strong>Environment Preference:</strong> ${response.environment}</p>
             <p style="margin: 5px 0;"><strong>Deadline Approach:</strong> ${response.deadlineStyle}</p>
+            <p style="margin: 5px 0;"><strong>Sensory Focus:</strong> ${response.sensoryFocus}</p>
+            <p style="margin: 5px 0;"><strong>Flavor Notes:</strong> ${response.flavorNotes}</p>
             <p style="margin: 5px 0;"><strong>Attention Style:</strong> ${response.attentionStyle}</p>
           </div>
+
+          ${response.personalizedResults ? `
+          <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px; margin-top: 20px;">
+            <h2 style="color: #4a5568; margin-top: 0;">Personalized Results</h2>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-wrap;">
+${JSON.stringify(response.personalizedResults, null, 2)}
+            </pre>
+          </div>
+          ` : ''}
 
           <p style="color: #718096; font-size: 0.875rem; margin-top: 20px;">
             Received on: ${new Date().toLocaleString()}
