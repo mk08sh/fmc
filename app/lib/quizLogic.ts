@@ -8,6 +8,8 @@ interface PersonalizedResult {
 
 type ProblemSolvingStyle = 'Methodical Analyzer' | 'Intuitive Visionary' | 'Collaborative Builder' | 'Rapid Experimenter';
 type WorkStyle = 'Deep Focus Immersion' | 'Parallel Processing' | 'Structured Approach' | 'Collaborative Thinking';
+type BoostTime = 'Early Riser' | 'Mid-Morning' | 'Afternoon Recharge' | 'Evening Creator';
+type FlavorNotes = 'Bright & Vibrant' | 'Rich & Complex' | 'Bold & Intense' | 'Smooth & Balanced';
 
 export function generatePersonalizedResults(data: QuizFormData): PersonalizedResult {
   // Generate work style description
@@ -71,9 +73,9 @@ function generateCoffeeRecommendation(data: QuizFormData): string {
       'Bold & Intense': 'Dark roast Espresso Blend with robust flavor',
       'Smooth & Balanced': 'Medium roast Hawaiian with mild sweetness'
     }
-  };
+  } as const;
 
-  return recommendations[data.boostTime]?.[data.flavorNotes] || 
+  return recommendations[data.boostTime as BoostTime]?.[data.flavorNotes as FlavorNotes] || 
     'A balanced medium roast blend customized to your taste preferences';
 }
 
