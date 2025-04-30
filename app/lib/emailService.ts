@@ -157,6 +157,11 @@ export function createQuizResponseEmail(quizData: any) {
 }
 
 export async function emailQuizResponse(response: QuizFormData & { personalizedResults?: any }) {
+  if (!transporter) {
+    console.error('Email service not properly initialized');
+    throw new Error('Email service not properly initialized');
+  }
+
   try {
     // Format the contact information
     const contactInfo = `
@@ -220,7 +225,7 @@ ${personalizedResults}
 `;
 
     // Send email with HTML format for better readability
-    await transporter.sendMail({
+    const mailResult = await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: process.env.RECIPIENT_EMAIL,
       subject: response.date 
